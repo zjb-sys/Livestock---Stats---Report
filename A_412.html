@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>畜牧业数据管理系统</title>
+<style>
+  [hidden] { display: none !important; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --g900: #1a4d2e; --g700: #2c7744; --g600: #3a7d4a; --g500: #4a9d5e;
+    --g300: #c8e0c8; --g200: #d4e8d0; --g100: #ecf4ec; --g50: #f8fcf8;
+    --muted: #7a9c79;
+  }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(135deg, #f0f7ff 0%, #e6f0e6 100%);
+    padding: 20px; color: #2c3e50; min-height: 100vh;
+  }
+
+  /* ---------- 布局 ---------- */
+  .container {
+    max-width: 1400px; margin: 0 auto;
+    background: rgba(255,255,255,.95); border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(31,38,135,.15);
+    overflow: hidden; border: 1px solid rgba(255,255,255,.3);
+  }
+  .header {
+    background: linear-gradient(135deg, var(--g700) 0%, var(--g900) 100%);
+    color: #fff; padding: 25px 20px; text-align: center;
+    border-bottom: 3px solid var(--g200);
+  }
+  .header h1 { font-size: 32px; margin-bottom: 10px; letter-spacing: .5px; text-shadow: 1px 1px 2px rgba(0,0,0,.2); }
+  .header p { opacity: .9; }
+
+  .nav-tabs { display: flex; background: rgba(236,244,236,.9); border-bottom: 2px solid var(--g200); }
+  .nav-tab {
+    flex: 1; padding: 18px; border: none; background: transparent; cursor: pointer;
+    font-size: 17px; font-weight: 600; color: #5a7d59;
+    border-bottom: 3px solid transparent; transition: all .3s;
+  }
+  .nav-tab:hover { background: rgba(212,232,208,.4); color: var(--g700); }
+  .nav-tab.active { background: #fff; color: var(--g900); border-bottom-color: var(--g500); }
+
+  .tab-content { display: none; padding: 35px; min-height: 600px; background: rgba(255,255,255,.85); }
+  .tab-content.active { display: block; }
+
+  .section-title {
+    font-size: 22px; color: var(--g900); margin-bottom: 25px;
+    padding-bottom: 12px; border-bottom: 2px solid var(--g200);
+  }
+  .sub-title { font-size: 18px; color: var(--g900); }
+
+  .form-section {
+    margin-bottom: 35px; padding: 25px; background: rgba(255,255,255,.9);
+    border-radius: 10px; border-left: 4px solid var(--g500);
+    box-shadow: 0 4px 12px rgba(0,0,0,.05);
+  }
+  .form-section h3 {
+    color: var(--g900); margin-bottom: 12px; padding-bottom: 12px;
+    border-bottom: 2px solid var(--g200); font-size: 20px;
+  }
+  .form-row {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px; margin-bottom: 10px;
+  }
+  .help-text { font-size: 12px; color: var(--muted); margin-top: 6px; font-style: italic; }
+
+  /* ---------- 表单 ---------- */
+  .form-group { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .form-group label { font-weight: 600; color: var(--g700); font-size: 15px; }
+  .form-group input, .form-group select {
+    padding: 12px 15px; border: 1px solid var(--g300); border-radius: 6px;
+    font-size: 15px; background: var(--g50); transition: all .3s; width: 100%;
+  }
+  .form-group input:focus, .form-group select:focus {
+    outline: none; border-color: var(--g500); box-shadow: 0 0 0 3px rgba(74,157,94,.2);
+  }
+  .form-group input[readonly] { background: var(--g100); color: var(--muted); cursor: not-allowed; }
+  .req { color: #d9534f; }
+
+  /* ---------- 按钮 ---------- */
+  .btn {
+    padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer;
+    font-size: 15px; font-weight: 600; color: #fff; transition: all .3s;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,.12);
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 10px rgba(0,0,0,.18); }
+  .btn-sm { padding: 6px 12px; font-size: 13px; }
+  .btn-primary { background: linear-gradient(to right, #4a9d5e, #3a7d4a); }
+  .btn-success { background: linear-gradient(to right, #5cb85c, #449d44); }
+  .btn-warning { background: linear-gradient(to right, #f0ad4e, #ec971f); }
+  .btn-danger  { background: linear-gradient(to right, #d9534f, #c9302c); }
+  .btn-info    { background: linear-gradient(to right, #5bc0de, #31b0d5); }
+  .action-buttons { display: flex; gap: 12px; margin-top: 25px; flex-wrap: wrap; }
+
+  /* ---------- 录入步骤 ---------- */
+  .steps { display: flex; margin-bottom: 20px; }
+  .step {
+    flex: 1; padding: 10px 0; border: none; cursor: pointer; font-family: inherit;
+    background: var(--g100); color: var(--muted); font-weight: 600; font-size: 15px;
+    border-bottom: 3px solid var(--g200); transition: all .3s;
+  }
+  .step.active { background: #fff; color: var(--g900); border-bottom-color: var(--g500); }
+  .edit-banner {
+    padding: 10px 15px; margin-bottom: 15px; border-radius: 6px;
+    background: #fff7e6; border-left: 4px solid #f0ad4e; color: #8a5a00; font-size: 14px;
+  }
+
+  /* ---------- 折叠面板 ---------- */
+  .level-panel { border: 1px solid var(--g200); border-radius: 8px; margin-bottom: 15px; background: #fff; }
+  .level-panel summary {
+    padding: 14px 18px; font-weight: 600; color: var(--g900); cursor: pointer;
+    background: var(--g50); border-radius: 8px; list-style: none;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .level-panel summary::-webkit-details-marker { display: none; }
+  .level-panel summary::before { content: "▶"; font-size: 12px; transition: transform .2s; }
+  .level-panel[open] summary::before { transform: rotate(90deg); }
+  .level-content { padding: 0 20px 20px; }
+  .sub-group { border: 1px solid #e0efe0; border-radius: 6px; padding: 12px 15px; margin: 12px 0; min-width: 0; }
+  .sub-group legend { font-size: 15px; font-weight: 600; color: var(--g700); padding: 0 8px; }
+
+  /* ---------- 汇总 ---------- */
+  .summary-cards {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 25px; margin-bottom: 35px;
+  }
+  .summary-card {
+    position: relative; overflow: hidden; padding: 25px; border-radius: 12px;
+    background: linear-gradient(135deg, #fff 0%, var(--g50) 100%);
+    border: 1px solid var(--g200); box-shadow: 0 6px 16px rgba(0,0,0,.08);
+  }
+  .summary-card::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 5px; height: 100%;
+    background: linear-gradient(to bottom, var(--g500), var(--g600));
+  }
+  .summary-card h4 { color: var(--g900); margin-bottom: 10px; font-size: 18px; }
+  .summary-card .value { font-size: 32px; font-weight: 700; color: var(--g700); margin: 8px 0; }
+  .summary-card small { color: var(--muted); }
+
+  .toolbar {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 15px; flex-wrap: wrap; margin-bottom: 15px;
+  }
+  .toolbar input[type="search"] {
+    padding: 10px 14px; border: 1px solid var(--g300); border-radius: 6px;
+    min-width: 260px; font-size: 14px;
+  }
+
+  .table-container { overflow-x: auto; border: 1px solid #e0efe0; border-radius: 8px; }
+  table { width: 100%; min-width: max-content; border-collapse: collapse; background: #fff; }
+  th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid #e0efe0; white-space: nowrap; font-size: 14px; }
+  th { background: linear-gradient(to bottom, var(--g500), var(--g600)); color: #fff; font-weight: 600; position: sticky; top: 0; }
+  tbody tr:nth-child(even) { background: rgba(236,244,236,.3); }
+  tbody tr:hover { background: rgba(212,232,208,.4); }
+  td.empty { text-align: center; color: #999; padding: 40px; }
+  .op-col { position: sticky; right: 0; box-shadow: -2px 0 4px rgba(0,0,0,.05); }
+  td.op-col { background: #fff; }
+  th.op-col { background: var(--g600); }
+
+  /* ---------- 弹窗 ---------- */
+  .modal {
+    position: fixed; inset: 0; z-index: 1000; padding: 20px;
+    background: rgba(0,0,0,.5); backdrop-filter: blur(3px);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-content {
+    position: relative; width: 100%; max-width: 650px; max-height: 85vh; overflow: auto;
+    padding: 35px; border-radius: 12px;
+    background: linear-gradient(135deg, #fff 0%, var(--g50) 100%);
+    box-shadow: 0 20px 40px rgba(0,0,0,.2);
+  }
+  .modal-content h3 { color: var(--g900); margin-bottom: 10px; }
+  #modalMessage { white-space: pre-line; line-height: 1.7; margin-bottom: 10px; word-break: break-all; }
+  .close {
+    position: absolute; right: 16px; top: 10px; border: none; background: none;
+    font-size: 32px; cursor: pointer; color: var(--muted); transition: all .3s;
+  }
+  .close:hover { color: #c9302c; transform: scale(1.1); }
+
+  @media (max-width: 768px) {
+    .header h1 { font-size: 24px; }
+    .nav-tab { font-size: 14px; padding: 12px 6px; }
+    .tab-content { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header class="header">
+    <h1>畜牧业数据管理系统</h1>
+    <p>乌兰木伦镇养殖户数据管理平台</p>
+  </header>
+
+  <nav class="nav-tabs" role="tablist">
+    <button class="nav-tab active" data-tab="param" role="tab">参数调整</button>
+    <button class="nav-tab" data-tab="entry" role="tab">数据录入</button>
+    <button class="nav-tab" data-tab="summary" role="tab">数据汇总</button>
+  </nav>
+
+  <!-- 参数调整 -->
+  <section id="param" class="tab-content active">
+    <h2 class="section-title">计算参数调整</h2>
+    <div id="paramGroups"></div>
+    <div class="action-buttons">
+      <button class="btn btn-primary" data-action="saveParams">保存参数</button>
+      <button class="btn btn-success" data-action="applyParams">应用到计算</button>
+      <button class="btn btn-warning" data-action="resetParams">重置为默认值</button>
+    </div>
+  </section>
+
+  <!-- 数据录入 -->
+  <section id="entry" class="tab-content">
+    <h2 class="section-title">养殖户数据录入</h2>
+    <div class="steps">
+      <button type="button" class="step active" data-step="1">① 基础信息</button>
+      <button type="button" class="step" data-step="2">② 存栏数据</button>
+      <button type="button" class="step" data-step="3">③ 出栏数据</button>
+      <button type="button" class="step" data-step="4">④ 产品产量</button>
+    </div>
+    <p id="editStatus" class="edit-banner" hidden></p>
+    <form id="entryForm" novalidate>
+      <div id="entrySections"></div>
+    </form>
+    <div class="action-buttons">
+      <button type="button" class="btn btn-success" data-action="autoCalc">自动计算产量</button>
+      <button type="button" class="btn btn-primary" data-action="saveEntry">保存</button>
+      <button type="button" class="btn btn-warning" id="cancelBtn" data-action="cancelEdit" hidden>取消编辑</button>
+      <button type="button" class="btn btn-warning" data-action="clearEntry">清空</button>
+    </div>
+  </section>
+
+  <!-- 数据汇总 -->
+  <section id="summary" class="tab-content">
+    <h2 class="section-title">数据汇总与展示</h2>
+    <div class="summary-cards">
+      <div class="summary-card"><h4>总存栏量</h4><div class="value" id="cardInventory">0</div><small>头/只</small></div>
+      <div class="summary-card"><h4>总出栏量</h4><div class="value" id="cardOut">0</div><small>头/只</small></div>
+      <div class="summary-card"><h4>总产量</h4><div class="value" id="cardProduction">0.00</div><small>吨</small></div>
+      <div class="summary-card"><h4>养殖户数量</h4><div class="value" id="cardFarmers">0</div><small>户</small></div>
+    </div>
+    <div class="toolbar">
+      <h3 class="sub-title">详细数据汇总表</h3>
+      <input type="search" id="searchInput" placeholder="按养殖户姓名或填报单位筛选">
+    </div>
+    <div class="table-container">
+      <table>
+        <thead id="summaryHead"></thead>
+        <tbody id="summaryBody"></tbody>
+      </table>
+    </div>
+    <p class="help-text">* 表格列较多，可左右滑动查看；卡片与报告均基于当前筛选结果。</p>
+    <div class="action-buttons">
+      <button class="btn btn-primary" data-action="exportCSV">导出数据</button>
+      <button class="btn btn-info" data-action="importCSV">导入数据（CSV）</button>
+      <button class="btn btn-success" data-action="generateReport">生成报告</button>
+      <button class="btn btn-warning" data-action="refresh">刷新汇总</button>
+      <button class="btn btn-info" data-action="validateAll">数据校验</button>
+      <button class="btn btn-danger" data-action="recalcAll">重新计算所有数据</button>
+    </div>
+  </section>
+</div>
+
+<!-- 弹窗 -->
+<div id="modal" class="modal" hidden>
+  <div class="modal-content" role="dialog" aria-modal="true">
+    <button class="close" data-action="closeModal" aria-label="关闭">&times;</button>
+    <h3 id="modalTitle"></h3>
+    <p id="modalMessage"></p>
+    <div class="action-buttons">
+      <button class="btn btn-primary" data-action="closeModal">确定</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="importFile" accept=".csv" hidden>
+
+<script>
+'use strict';
+
+/* ==================== 1. 配置 ==================== */
+
+// 沿用原存储键名，已有数据可直接读取
+const STORAGE_KEYS = { params: 'parameters', records: 'livestockData' };
+
+const REPORT_UNITS = {
+  社区: ['滨河路社区居民委员会', '上湾社区居民委员会', '补连塔社区居民委员会', '乌兰木伦社区居民委员会'],
+  村委会: [
+    '上湾村村民委员会', '补连塔拉村村民委员会', '苏勒德霍洛村村民委员会', '乌兰木伦村村民委员会',
+    '查干苏村村民委员会', '花亥图村村民委员会', '木都希里村村民委员会', '折家梁村村民委员会',
+    '石灰沟村村民委员会', '布连海子村村民委员会', '格丑庙村村民委员会', '布尔台格村村民委员会',
+    '明安木独村村民委员会', '巴日图塔村村民委员会', '哈沙图村村民委员会', '曼斋庙村村民委员会',
+  ],
+};
+
+// 计算参数：驱动参数表单渲染、读取、校验
+const PARAM_GROUPS = [
+  { title: '动物出栏体重', hint: '用于按出栏数量计算肉类产量', items: [
+    { key: 'pigWeight', label: '猪出栏体重(kg)', value: 150, min: 50, max: 200, step: 1 },
+    { key: 'cowWeight', label: '牛出栏体重(kg)', value: 400, min: 200, max: 500, step: 1 },
+    { key: 'goatWeight', label: '山羊出栏体重(kg)', value: 30, min: 20, max: 50, step: 0.1 },
+    { key: 'sheepWeight', label: '绵羊出栏体重(kg)', value: 35, min: 25, max: 60, step: 0.1 },
+    { key: 'chickenWeight', label: '鸡出栏体重(kg)', value: 4, min: 1, max: 5, step: 0.1 },
+  ]},
+  { title: '出肉率', hint: '单位：%', items: [
+    { key: 'pigMeatRate', label: '猪肉出肉率(%)', value: 76, min: 70, max: 80, step: 0.1 },
+    { key: 'cowMeatRate', label: '牛肉出肉率(%)', value: 65, min: 55, max: 65, step: 0.1 },
+    { key: 'sheepMeatRate', label: '绵羊肉出肉率(%)', value: 45, min: 40, max: 50, step: 0.1 },
+    { key: 'goatMeatRate', label: '山羊肉出肉率(%)', value: 45, min: 35, max: 45, step: 0.1 },
+    { key: 'chickenMeatRate', label: '鸡肉出肉率(%)', value: 85, min: 60, max: 100, step: 0.1 },
+  ]},
+  { title: '蛋鸡产蛋参数', hint: '', items: [
+    { key: 'annualEggCount', label: '平均每只蛋鸡年产蛋数(个)', value: 280, min: 200, max: 350, step: 1 },
+    { key: 'avgEggWeight', label: '每颗蛋重量(g)', value: 60, min: 40, max: 80, step: 1 },
+  ]},
+  { title: '奶牛产奶参数', hint: '', items: [
+    { key: 'milkDays', label: '产奶天数(天)', value: 305, min: 0, max: 365, step: 1 },
+    { key: 'dailyMilkYield', label: '日产量(kg/头/天)', value: 25, min: 0, max: 100, step: 0.1 },
+  ]},
+];
+
+// 录入表单分组（表格列顺序也由此决定）
+const BASE_KEYS = ['reportUnit', 'farmerName', 'reportDate'];
+const STOCK_GROUPS = [
+  { title: '猪', keys: ['pigInventory', 'breedingSowInventory'] },
+  { title: '牛', keys: ['cowInventory', 'beefCattleInventory', 'dairyCattleInventory'] },
+  { title: '羊', keys: ['goatInventory', 'sheepInventory'] },
+  { title: '禽', keys: ['chickenInventory', 'broilerInventory', 'layerInventory'] },
+];
+const OUT_KEYS = [
+  'pigOut', 'cowOut', 'goatOut', 'sheepOut', 'chickenOut',
+  'layerChickenYearCount', 'dairyCattleYearCount',
+];
+const PROD_KEYS = [
+  'porkProduction', 'beefProduction', 'muttonProduction', 'goatMeatProduction',
+  'sheepMeatProduction', 'chickenMeatProduction', 'eggProduction', 'milkProduction',
+];
+const TOTAL_KEYS = ['totalInventory', 'totalOut', 'totalProduction'];
+
+const STOCK_KEYS = STOCK_GROUPS.flatMap(g => g.keys);
+const INT_KEYS = [...STOCK_KEYS, ...OUT_KEYS];
+const ENTRY_KEYS = [...BASE_KEYS, ...STOCK_KEYS, ...OUT_KEYS, ...PROD_KEYS];
+const TABLE_KEYS = ['farmerName', 'reportUnit', 'reportDate', ...STOCK_KEYS, ...OUT_KEYS, ...PROD_KEYS, ...TOTAL_KEYS];
+
+const ENTRY_SECTIONS = [
+  { title: '1. 基础信息', groups: [{ keys: BASE_KEYS }] },
+  { title: '2. 存栏数据', groups: STOCK_GROUPS },
+  { title: '3. 出栏数据', groups: [{ keys: OUT_KEYS }] },
+  { title: '4. 主要产品产量', groups: [{ keys: PROD_KEYS }] },
+];
+
+// 字段元数据：label 名称、unit 单位、type 类型（text/select/date/int/ton）
+const FIELDS = {
+  reportUnit: { label: '填报单位', type: 'select', required: true },
+  farmerName: { label: '养殖户姓名', type: 'text', required: true },
+  reportDate: { label: '填报日期', type: 'date' },
+
+  pigInventory: { label: '猪存栏', unit: '头', type: 'int' },
+  breedingSowInventory: { label: '能繁母猪', unit: '头', type: 'int' },
+  cowInventory: { label: '牛存栏', unit: '头', type: 'int' },
+  beefCattleInventory: { label: '肉牛', unit: '头', type: 'int' },
+  dairyCattleInventory: { label: '奶牛', unit: '头', type: 'int' },
+  goatInventory: { label: '山羊存栏', unit: '只', type: 'int' },
+  sheepInventory: { label: '绵羊存栏', unit: '只', type: 'int' },
+  chickenInventory: { label: '活鸡存栏', unit: '只', type: 'int' },
+  broilerInventory: { label: '肉鸡', unit: '只', type: 'int' },
+  layerInventory: { label: '蛋鸡', unit: '只', type: 'int' },
+
+  pigOut: { label: '猪出栏', unit: '头', type: 'int' },
+  cowOut: { label: '牛出栏', unit: '头', type: 'int' },
+  goatOut: { label: '山羊出栏', unit: '只', type: 'int' },
+  sheepOut: { label: '绵羊出栏', unit: '只', type: 'int' },
+  chickenOut: { label: '活鸡出栏', unit: '只', type: 'int' },
+  layerChickenYearCount: { label: '全年产蛋鸡数量', unit: '只', type: 'int' },
+  dairyCattleYearCount: { label: '全年奶牛数量', unit: '头', type: 'int' },
+
+  porkProduction: { label: '猪肉', unit: '吨', type: 'ton' },
+  beefProduction: { label: '牛肉', unit: '吨', type: 'ton' },
+  muttonProduction: { label: '羊肉', unit: '吨', type: 'ton', readonly: true },
+  goatMeatProduction: { label: '山羊肉', unit: '吨', type: 'ton' },
+  sheepMeatProduction: { label: '绵羊肉', unit: '吨', type: 'ton' },
+  chickenMeatProduction: { label: '鸡肉', unit: '吨', type: 'ton' },
+  eggProduction: { label: '鸡蛋', unit: '吨', type: 'ton' },
+  milkProduction: { label: '生牛奶', unit: '吨', type: 'ton' },
+
+  totalInventory: { label: '总存栏', unit: '头/只', type: 'int', computed: true },
+  totalOut: { label: '总出栏', unit: '头/只', type: 'int', computed: true },
+  totalProduction: { label: '总产量', unit: '吨', type: 'ton', computed: true },
+};
+
+// 产量项 -> 数量来源字段（用于自动计算）
+const PRODUCTION_SOURCES = {
+  porkProduction: 'pigOut',
+  beefProduction: 'cowOut',
+  goatMeatProduction: 'goatOut',
+  sheepMeatProduction: 'sheepOut',
+  chickenMeatProduction: 'chickenOut',
+  eggProduction: 'layerChickenYearCount',
+  milkProduction: 'dairyCattleYearCount',
+};
+// 总产量包含的产量项（羊肉已包含山羊肉和绵羊肉，故不重复计入）
+const PRODUCTION_SUM_KEYS = ['porkProduction', 'beefProduction', 'muttonProduction', 'chickenMeatProduction', 'eggProduction', 'milkProduction'];
+
+const ALL_PARAM_ITEMS = PARAM_GROUPS.flatMap(g => g.items);
+const DEFAULT_PARAMS = Object.fromEntries(ALL_PARAM_ITEMS.map(it => [it.key, it.value]));
+
+/* ==================== 2. 状态 ==================== */
+let params = { ...DEFAULT_PARAMS };   // 已保存并生效的参数
+let records = [];                     // 所有养殖户记录
+let editingId = null;                 // 当前编辑的记录 id
+let dom = {};                         // DOM 引用缓存
+let dirty = false;                    // 录入表单是否有未保存更改
+
+/* ==================== 3. 工具函数 ==================== */
+const $ = id => document.getElementById(id);
+const el = key => $('f-' + key);      // 录入表单字段
+const pad2 = n => String(n).padStart(2, '0');
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+function newId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+// 安全转为非负数，无效值返回 0
+function toNum(v) {
+  const n = parseFloat(v);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+const colLabel = key => {
+  const f = FIELDS[key];
+  return f.unit ? `${f.label}(${f.unit})` : f.label;
+};
+const LABEL_TO_KEY = Object.fromEntries(TABLE_KEYS.map(k => [colLabel(k), k]));
+function formatValue(key, value) {
+  if (FIELDS[key].type === 'ton') return Number(value).toFixed(3);
+  return value ?? '';
+}
+
+function download(content, filename, mime) {
+  const url = URL.createObjectURL(new Blob([content], { type: mime }));
+  const a = Object.assign(document.createElement('a'), { href: url, download: filename });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function showModal(title, message) {
+  dom.modalTitle.textContent = title;
+  dom.modalMessage.textContent = message;
+  dom.modal.hidden = false;
+}
+function closeModal() {
+  dom.modal.hidden = true;
+}
+
+/* ==================== 4. 存储 ==================== */
+const storage = {
+  get(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw == null ? fallback : JSON.parse(raw);
+    } catch {
+      return fallback;
+    }
+  },
+  set(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (e) {
+      showModal('保存失败', '浏览器存储不可用或空间不足，数据未能保存：' + e.message);
+      return false;
+    }
+  },
+  remove(key) {
+    try { localStorage.removeItem(key); } catch { /* 忽略 */ }
+  },
+};
+
+/* ==================== 5. 数据模型与计算 ==================== */
+
+// 规范化一条记录：类型统一、派生字段重算，兼容旧数据
+function normalizeRecord(raw = {}) {
+  const r = { id: raw.id ? String(raw.id) : newId() };
+  r.reportUnit = String(raw.reportUnit ?? '').trim();
+  r.farmerName = String(raw.farmerName ?? '').trim();
+  r.reportDate = String(raw.reportDate ?? '').trim();
+
+  [...INT_KEYS, ...PROD_KEYS].forEach(k => { r[k] = toNum(raw[k]); });
+
+  // 兼容旧数据：仅有羊肉总量时，按 1:1 拆分到山羊肉/绵羊肉
+  if (r.goatMeatProduction + r.sheepMeatProduction === 0 && r.muttonProduction > 0) {
+    r.goatMeatProduction = r.muttonProduction / 2;
+    r.sheepMeatProduction = r.muttonProduction / 2;
+  }
+  r.muttonProduction = r.goatMeatProduction + r.sheepMeatProduction;
+
+  r.totalInventory = r.pigInventory + r.cowInventory + r.goatInventory + r.sheepInventory + r.chickenInventory;
+  r.totalOut = r.pigOut + r.cowOut + r.goatOut + r.sheepOut + r.chickenOut;
+  r.totalProduction = PRODUCTION_SUM_KEYS.reduce((s, k) => s + r[k], 0);
+  return r;
+}
+
+// 按出栏/产蛋/产奶数据计算产量（吨）
+function meatTon(heads, weightKg, ratePct) {
+  return heads * weightKg * ratePct / 100 / 1000;
+}
+function calcProduction(src, p) {
+  const goatMeat = meatTon(src.goatOut, p.goatWeight, p.goatMeatRate);
+  const sheepMeat = meatTon(src.sheepOut, p.sheepWeight, p.sheepMeatRate);
+  return {
+    porkProduction: meatTon(src.pigOut, p.pigWeight, p.pigMeatRate),
+    beefProduction: meatTon(src.cowOut, p.cowWeight, p.cowMeatRate),
+    goatMeatProduction: goatMeat,
+    sheepMeatProduction: sheepMeat,
+    muttonProduction: goatMeat + sheepMeat,
+    chickenMeatProduction: meatTon(src.chickenOut, p.chickenWeight, p.chickenMeatRate),
+    eggProduction: src.layerChickenYearCount * p.annualEggCount * p.avgEggWeight / 1e6,
+    milkProduction: src.dairyCattleYearCount * p.milkDays * p.dailyMilkYield / 1000,
+  };
+}
+
+// 业务合理性校验（返回问题列表）
+function validateRecord(r) {
+  const issues = [];
+  if (r.breedingSowInventory > r.pigInventory) issues.push('能繁母猪数量大于猪存栏');
+  if (r.beefCattleInventory + r.dairyCattleInventory > r.cowInventory) issues.push('肉牛与奶牛数量之和大于牛存栏');
+  if (r.broilerInventory + r.layerInventory > r.chickenInventory) issues.push('肉鸡与蛋鸡数量之和大于活鸡存栏');
+  if (r.pigOut > r.pigInventory) issues.push('猪出栏数量大于猪存栏');
+  if (r.cowOut > r.cowInventory) issues.push('牛出栏数量大于牛存栏');
+  if (r.goatOut > r.goatInventory) issues.push('山羊出栏数量大于山羊存栏');
+  if (r.sheepOut > r.sheepInventory) issues.push('绵羊出栏数量大于绵羊存栏');
+  if (r.chickenOut > r.chickenInventory) issues.push('活鸡出栏数量大于活鸡存栏');
+  if (r.reportDate && r.reportDate > todayStr()) issues.push('填报日期不能晚于今天');
+  return issues;
+}
+
+// 统一的记录写入：先更新内存，持久化失败则回滚
+function commitRecords(next) {
+  const prev = records;
+  records = next;
+  if (storage.set(STORAGE_KEYS.records, records)) return true;
+  records = prev;
+  return false;
+}
+function loadRecords() {
+  const raw = storage.get(STORAGE_KEYS.records, []);
+  records = Array.isArray(raw)
+    ? raw.filter(item => item && typeof item === 'object').map(item => normalizeRecord(item))
+    : [];
+}
+
+/* ==================== 6. 参数 ==================== */
+function loadParams() {
+  const stored = storage.get(STORAGE_KEYS.params, {}) || {};
+  params = Object.fromEntries(ALL_PARAM_ITEMS.map(it => {
+    const v = parseFloat(stored[it.key]);
+    return [it.key, Number.isFinite(v) && v >= 0 ? v : it.value];
+  }));
+}
+
+function renderParamForm() {
+  dom.paramGroups.innerHTML = PARAM_GROUPS.map((g, i) => `
+    <details class="level-panel"${i === 0 ? ' open' : ''}>
+      <summary>${g.title}</summary>
+      ${g.hint ? `<p class="hint help-text">${g.hint}</p>` : ''}
+      <div class="level-content">
+        <div class="form-row">
+          ${g.items.map(it => `
+            <div class="form-group">
+              <label for="p-${it.key}">${it.label}</label>
+              <input type="number" id="p-${it.key}" min="${it.min}" max="${it.max}" step="${it.step}">
+            </div>`).join('')}
+        </div>
+      </div>
+    </details>`).join('');
+}
+function fillParamForm() {
+  ALL_PARAM_ITEMS.forEach(it => { $('p-' + it.key).value = params[it.key]; });
+}
+// 读取并校验表单参数，返回 null 表示校验未通过
+function readParamsFromForm() {
+  const result = {};
+  const outOfRange = [];
+  for (const it of ALL_PARAM_ITEMS) {
+    const raw = $('p-' + it.key).value.trim();
+    const v = parseFloat(raw);
+    if (raw === '' || !Number.isFinite(v) || v < 0) {
+      showModal('参数错误', `【${it.label}】请输入有效的非负数字。`);
+      return null;
+    }
+    if (v < it.min || v > it.max) outOfRange.push(`${it.label}（建议 ${it.min} ~ ${it.max}）`);
+    result[it.key] = v;
+  }
+  if (outOfRange.length && !confirm(`以下参数超出建议范围：\n${outOfRange.join('\n')}\n\n仍要使用这些值吗？`)) {
+    return null;
+  }
+  return result;
+}
+function saveParams() {
+  const next = readParamsFromForm();
+  if (next && storage.set(STORAGE_KEYS.params, next)) {
+    params = next;
+    showModal('成功', '参数保存成功！');
+  }
+}
+function applyParams() {
+  const next = readParamsFromForm();
+  if (next && storage.set(STORAGE_KEYS.params, next)) {
+    params = next;
+    showModal('成功', '参数已保存并应用到后续计算。\n如需更新历史记录的产量，请使用“重新计算所有数据”。');
+  }
+}
+function resetParams() {
+  if (!confirm('确定要将所有参数恢复为默认值吗？')) return;
+  params = { ...DEFAULT_PARAMS };
+  storage.remove(STORAGE_KEYS.params);
+  fillParamForm();
+  showModal('成功', '参数已恢复为默认值！');
+}
+
+/* ==================== 7. 数据录入 ==================== */
+function renderEntryForm() {
+  const unitOptions = Object.entries(REPORT_UNITS).map(([group, units]) =>
+    `<optgroup label="${group}">${units.map(u => `<option value="${u}">${u}</option>`).join('')}</optgroup>`
+  ).join('');
+
+  const renderField = key => {
+    const f = FIELDS[key];
+    const label = `${colLabel(key)}${f.required ? ' <span class="req">*</span>' : ''}`;
+    let input;
+    if (f.type === 'select') {
+      input = `<select id="f-${key}"><option value="">请选择</option>${unitOptions}</select>`;
+    } else if (f.type === 'text') {
+      input = `<input type="text" id="f-${key}" maxlength="50" placeholder="请输入${f.label}">`;
+    } else if (f.type === 'date') {
+      input = `<input type="date" id="f-${key}">`;
+    } else {
+      const step = f.type === 'ton' ? 'any' : '1';
+      const extra = f.readonly ? ' readonly tabindex="-1"' : '';
+      input = `<input type="number" id="f-${key}" min="0" step="${step}" placeholder="0"${extra}>`;
+    }
+    return `<div class="form-group"><label for="f-${key}">${label}</label>${input}</div>`;
+  };
+
+  dom.entrySections.innerHTML = ENTRY_SECTIONS.map((sec, i) => `
+    <details class="level-panel" data-level="${i + 1}"${i === 0 ? ' open' : ''}>
+      <summary>${sec.title}</summary>
+      <div class="level-content">
+        ${sec.groups.map(g => `
+          <fieldset class="sub-group">
+            ${g.title ? `<legend>${g.title}</legend>` : ''}
+            <div class="form-row">${g.keys.map(renderField).join('')}</div>
+          </fieldset>`).join('')}
+      </div>
+    </details>`).join('');
+}
+
+function buildTableHead() {
+  dom.summaryHead.innerHTML = `<tr>${TABLE_KEYS.map(k => `<th>${colLabel(k)}</th>`).join('')}<th class="op-col">操作</th></tr>`;
+}
+
+function readEntryForm() {
+  return Object.fromEntries(ENTRY_KEYS.map(k => [k, el(k).value]));
+}
+function writeEntryForm(rec) {
+  const sel = el('reportUnit');
+  // 兼容旧数据中不在列表里的填报单位
+  if (rec.reportUnit && ![...sel.options].some(o => o.value === rec.reportUnit)) {
+    sel.add(new Option(rec.reportUnit, rec.reportUnit));
+  }
+  ENTRY_KEYS.forEach(k => {
+    const v = rec[k];
+    el(k).value = v === 0 || v == null ? '' : String(v);
+  });
+}
+
+function updateMutton() {
+  el('muttonProduction').value =
+    (toNum(el('goatMeatProduction').value) + toNum(el('sheepMeatProduction').value)).toFixed(3);
+}
+
+function setEditing(rec) {
+  editingId = rec ? rec.id : null;
+  dom.editStatus.hidden = !rec;
+  dom.editStatus.textContent = rec ? `正在编辑：${rec.reportUnit} - ${rec.farmerName}` : '';
+  dom.cancelBtn.hidden = !rec;
+}
+function resetEntryForm() {
+  dirty = false;
+  dom.entryForm.reset();
+  el('reportDate').value = todayStr();
+  setEditing(null);
+}
+function clearEntry() {
+  if (confirm('确定清空当前表单内容吗？')) resetEntryForm();
+}
+function setPanelsOpen(open) {
+  dom.panels.forEach(p => { p.open = open; });
+}
+
+// 手动触发：按出栏/产蛋/产奶数据覆盖计算产量
+function autoCalc() {
+  const src = normalizeRecord(readEntryForm());
+  const prod = calcProduction(src, params);
+  Object.entries(prod).forEach(([key, value]) => { el(key).value = value.toFixed(3); });
+  updateMutton();
+  dirty = true;
+  showModal('成功', '已根据出栏、产蛋、产奶数据自动计算产量！');
+}
+
+function saveEntry() {
+  const raw = readEntryForm();
+  if (!raw.reportUnit) return showModal('提示', '请先选择填报单位！');
+  if (!raw.farmerName.trim()) return showModal('提示', '请先填写养殖户姓名！');
+  if (!raw.reportDate) raw.reportDate = todayStr();
+
+  let rec = normalizeRecord({ ...raw, id: editingId });
+
+  // 产量未填写时，依据出栏/产蛋/产奶数据自动补算（不覆盖用户已手动填写的值）
+  const calc = calcProduction(rec, params);
+  const patch = {};
+  for (const [prod, src] of Object.entries(PRODUCTION_SOURCES)) {
+    if (rec[src] > 0 && el(prod).value.trim() === '') patch[prod] = calc[prod];
+  }
+  if ((rec.goatOut > 0 || rec.sheepOut > 0) && el('muttonProduction').value.trim() === '') patch.muttonProduction = calc.muttonProduction;
+  rec = normalizeRecord({ ...rec, ...patch });
+
+  const issues = validateRecord(rec);
+  if (issues.length && !confirm(`数据可能存在问题：\n· ${issues.join('\n· ')}\n\n仍要保存吗？`)) return;
+
+  // 同一填报单位下的同名养殖户视为重复记录
+  const dup = records.find(r => r.id !== rec.id && r.reportUnit === rec.reportUnit && r.farmerName === rec.farmerName);
+  if (dup && !confirm(`已存在「${rec.reportUnit} - ${rec.farmerName}」的记录，保存将覆盖原记录，是否继续？`)) return;
+
+  const next = records.filter(r => r !== dup);
+  const idx = next.findIndex(r => r.id === rec.id);
+  if (idx >= 0) next[idx] = rec; else next.push(rec);
+  if (!commitRecords(next)) return;
+
+  dirty = false;
+  resetEntryForm();
+  renderSummary();
+  showModal('成功', dup ? '数据已保存（已覆盖同名记录）！' : '数据已保存！');
+}
+
+function editRecord(id) {
+  const rec = records.find(r => r.id === id);
+  if (!rec) return;
+  writeEntryForm(rec);
+  setEditing(rec);
+  setPanelsOpen(true);
+  switchTab('entry');
+}
+
+/* ==================== 8. 数据汇总 ==================== */
+function getVisibleRecords() {
+  const kw = dom.searchInput.value.trim().toLowerCase();
+  if (!kw) return records;
+  return records.filter(r => `${r.farmerName} ${r.reportUnit}`.toLowerCase().includes(kw));
+}
+function totalsOf(rows) {
+  const sum = key => rows.reduce((s, r) => s + r[key], 0);
+  return {
+    count: rows.length,
+    inventory: sum('totalInventory'),
+    out: sum('totalOut'),
+    production: sum('totalProduction'),
+  };
+}
+
+const renderRow = r => `
+  <tr>
+    ${TABLE_KEYS.map(k => `<td>${escapeHtml(formatValue(k, r[k]))}</td>`).join('')}
+    <td class="op-col">
+      <button class="btn btn-warning btn-sm" data-action="edit" data-id="${escapeHtml(r.id)}">编辑</button>
+      <button class="btn btn-danger btn-sm" data-action="remove" data-id="${escapeHtml(r.id)}">删除</button>
+    </td>
+  </tr>`;
+
+function renderSummary() {
+  const rows = getVisibleRecords();
+  const t = totalsOf(rows);
+  dom.cards.inventory.textContent = t.inventory;
+  dom.cards.out.textContent = t.out;
+  dom.cards.production.textContent = t.production.toFixed(2);
+  dom.cards.farmers.textContent = t.count;
+  dom.summaryBody.innerHTML = rows.length
+    ? rows.map(renderRow).join('')
+    : `<tr><td class="empty" colspan="${TABLE_KEYS.length + 1}">暂无数据</td></tr>`;
+}
+
+function removeRecord(id) {
+  const rec = records.find(r => r.id === id);
+  if (!rec || !confirm(`确定要删除「${rec.farmerName}」的记录吗？`)) return;
+  if (!commitRecords(records.filter(r => r.id !== id))) return;
+  if (editingId === id) resetEntryForm();
+  renderSummary();
+  showModal('成功', '数据删除成功！');
+}
+
+function validateAll() {
+  const problems = records.flatMap(r =>
+    validateRecord(r).map(msg => `· ${r.farmerName}（${r.reportUnit}）：${msg}`));
+  if (!problems.length) {
+    return showModal('数据校验', `共 ${records.length} 条记录，全部通过校验。`);
+  }
+  showModal('数据校验', `发现 ${problems.length} 处异常：\n${problems.join('\n')}`);
+}
+
+// 使用已保存参数重新计算历史记录（仅更新有对应数量来源的产量项）
+function recalcAll() {
+  if (!records.length) return showModal('提示', '暂无数据可重新计算。');
+  if (!confirm('将使用【已保存】的参数重新计算所有记录的产量（仅更新有出栏/产蛋/产奶数据的产量项）。此操作不可撤销，是否继续？')) return;
+
+  let updated = 0;
+  const next = records.map(r => {
+    const calc = calcProduction(r, params);
+    const patch = {};
+    for (const [prod, src] of Object.entries(PRODUCTION_SOURCES)) {
+      if (r[src] > 0) patch[prod] = calc[prod];
+    }
+    if (r.goatOut > 0 || r.sheepOut > 0) patch.muttonProduction = calc.muttonProduction;
+    const normalized = normalizeRecord({ ...r, ...patch });
+    if (JSON.stringify(normalized) !== JSON.stringify(r)) updated++;
+    return normalized;
+  });
+
+  if (!commitRecords(next)) return;
+  renderSummary();
+  showModal('成功', `已重新计算 ${records.length} 条记录，其中 ${updated} 条产量发生变化。`);
+}
+
+/* ==================== 9. 导出与报告 ==================== */
+function exportCSV() {
+  if (!records.length) return showModal('提示', '暂无数据可导出。');
+
+  const cell = v => {
+    let s = String(v ?? '');
+    if (typeof v === 'string' && /^[=+\-@]/.test(s)) s = `'${s}`; // 防止表格软件执行公式
+    return `"${s.replace(/"/g, '""')}"`;
+  };
+  const header = TABLE_KEYS.map(k => cell(colLabel(k))).join(',');
+  const body = records.map(r => TABLE_KEYS.map(k => cell(formatValue(k, r[k]))).join(','));
+  download('\uFEFF' + [header, ...body].join('\r\n'),
+    `畜牧业数据汇总_${todayStr()}.csv`, 'text/csv;charset=utf-8;');
+  showModal('成功', '数据导出成功！');
+}
+
+function parseCSVLine(line) {
+  const fields = [];
+  let i = 0, cur = '', inQuotes = false;
+  while (i < line.length) {
+    const c = line[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (i + 1 < line.length && line[i + 1] === '"') { cur += '"'; i += 2; continue; }
+        inQuotes = false; i++; continue;
+      }
+      cur += c; i++;
+    } else {
+      if (c === ',') { fields.push(cur); cur = ''; i++; continue; }
+      if (c === '"') { inQuotes = true; i++; continue; }
+      cur += c; i++;
+    }
+  }
+  fields.push(cur);
+  return fields;
+}
+function parseCSV(text) {
+  text = text.replace(/^\uFEFF/, '');
+  const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
+  if (lines.length < 2) return { headers: [], rows: [] };
+  const headers = parseCSVLine(lines[0]).map(h => h.trim());
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) rows.push(parseCSVLine(lines[i]));
+  return { headers, rows };
+}
+function importCSV() {
+  const input = $('importFile');
+  if (!input.files.length) return showModal('提示', '请先选择 CSV 文件。');
+  const file = input.files[0];
+  const reader = new FileReader();
+  reader.onload = e => {
+    const { headers, rows } = parseCSV(e.target.result);
+    const imported = [];
+    let skipped = 0;
+    for (const row of rows) {
+      const rec = { id: newId() };
+      let hasData = false;
+      for (let i = 0; i < headers.length; i++) {
+        const key = LABEL_TO_KEY[headers[i]];
+        if (!key) continue;
+        const raw = row[i] == null ? '' : String(row[i]).trim();
+        if (raw === '') continue;
+        hasData = true;
+        rec[key] = raw;
+      }
+      if (!hasData) { skipped++; continue; }
+      imported.push(normalizeRecord(rec));
+    }
+    if (!imported.length) return showModal('提示', '未解析到有效数据。' + (skipped ? ` 跳过 ${skipped} 行空行。` : ''));
+    if (!confirm(`将导入 ${imported.length} 条记录，是否继续？`)) return;
+    const next = [...records, ...imported];
+    if (!commitRecords(next)) return;
+    input.value = '';
+    renderSummary();
+    showModal('成功', `已导入 ${imported.length} 条记录。`);
+  };
+  reader.onerror = () => showModal('错误', '读取文件失败。');
+  reader.readAsText(file, 'UTF-8');
+}
+
+function generateReport() {
+  const rows = getVisibleRecords();
+  if (!rows.length) return showModal('提示', '暂无数据可生成报告。');
+  const t = totalsOf(rows);
+
+  const head = TABLE_KEYS.map(k => `<th>${escapeHtml(colLabel(k))}</th>`).join('');
+  const body = rows.map(r =>
+    `<tr>${TABLE_KEYS.map(k => `<td>${escapeHtml(formatValue(k, r[k]))}</td>`).join('')}</tr>`
+  ).join('');
+
+  const html = `<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>畜牧业数据报告</title>
+<style>
+  body { font-family: Arial, "Microsoft YaHei", sans-serif; padding: 20px; color: #111; }
+  h1 { font-size: 22px; margin-bottom: 8px; }
+  h2 { font-size: 16px; margin: 18px 0 8px; }
+  .meta { color: #555; margin-bottom: 12px; }
+  ul { padding-left: 18px; }
+  .wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; white-space: nowrap; }
+  th { background: #f2f2f2; }
+  @media print { body { padding: 0; } }
+</style>
+</head>
+<body>
+<h1>畜牧业数据报告</h1>
+<p class="meta">生成日期：${todayStr()}</p>
+<h2>汇总数据</h2>
+<ul>
+  <li>总存栏量：${t.inventory} 头/只</li>
+  <li>总出栏量：${t.out} 头/只</li>
+  <li>总产量：${t.production.toFixed(2)} 吨</li>
+  <li>养殖户数量：${t.count} 户</li>
+</ul>
+<h2>详细数据</h2>
+<div class="wrap">
+  <table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
+</div>
+</body>
+</html>`;
+
+  download(html, `畜牧业数据报告_${todayStr().replace(/-/g, '')}.html`, 'text/html;charset=utf-8');
+  showModal('成功', '报告已导出为 HTML 文件，可直接打开或打印。');
+}
+
+/* ==================== 10. 页面交互 ==================== */
+function setActiveStep(n) {
+  dom.steps.forEach(s => s.classList.toggle('active', Number(s.dataset.step) === n));
+}
+function bindStepper() {
+  dom.panels.forEach((p, i) => p.addEventListener('toggle', () => {
+    if (p.open) setActiveStep(i + 1);
+  }));
+  dom.steps.forEach(btn => btn.addEventListener('click', () => {
+    const panel = dom.panels[Number(btn.dataset.step) - 1];
+    panel.open = true;
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }));
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.nav-tab').forEach(b => {
+    const active = b.dataset.tab === name;
+    b.classList.toggle('active', active);
+    b.setAttribute('aria-selected', String(active));
+  });
+  document.querySelectorAll('.tab-content').forEach(s => s.classList.toggle('active', s.id === name));
+  if (name === 'summary') {
+    loadRecords();   // 同步其他页签/窗口中的最新数据
+    renderSummary();
+  }
+}
+
+// 操作映射：data-action 与函数一一对应
+const ACTIONS = {
+  saveParams, applyParams, resetParams,
+  autoCalc, saveEntry, clearEntry, cancelEdit: resetEntryForm,
+  edit: editRecord, remove: removeRecord,
+  validateAll, recalcAll, exportCSV, importCSV, generateReport,
+  refresh: () => { loadRecords(); renderSummary(); },
+  closeModal,
+};
+
+function bindEvents() {
+  dom.tabs.addEventListener('click', e => {
+    const tab = e.target.closest('.nav-tab');
+    if (!tab) return;
+    if (tab.dataset.tab === 'entry') { switchTab(tab.dataset.tab); return; }
+    if (dirty && !confirm('当前有未保存的录入更改，离开后将丢失，是否继续？')) return;
+    dirty = false;
+    switchTab(tab.dataset.tab);
+  });
+
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('[data-action]');
+    const fn = btn && ACTIONS[btn.dataset.action];
+    if (fn) fn(btn.dataset.id);
+  });
+
+  dom.entryForm.addEventListener('submit', e => e.preventDefault());
+  dom.entryForm.addEventListener('input', e => {
+    dirty = true;
+    if (e.target.id === 'f-goatMeatProduction' || e.target.id === 'f-sheepMeatProduction') {
+      updateMutton();
+    }
+  });
+
+  dom.searchInput.addEventListener('input', renderSummary);
+  dom.modal.addEventListener('click', e => { if (e.target === dom.modal) closeModal(); });
+  window.addEventListener('beforeunload', e => {
+    if (dirty) { e.preventDefault(); e.returnValue = ''; }
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+}
+
+/* ==================== 11. 初始化 ==================== */
+function init() {
+  dom = {
+    tabs: document.querySelector('.nav-tabs'),
+    paramGroups: $('paramGroups'),
+    entryForm: $('entryForm'),
+    entrySections: $('entrySections'),
+    steps: [...document.querySelectorAll('.step')],
+    editStatus: $('editStatus'),
+    cancelBtn: $('cancelBtn'),
+    summaryHead: $('summaryHead'),
+    summaryBody: $('summaryBody'),
+    searchInput: $('searchInput'),
+    cards: {
+      inventory: $('cardInventory'),
+      out: $('cardOut'),
+      production: $('cardProduction'),
+      farmers: $('cardFarmers'),
+    },
+    modal: $('modal'),
+    modalTitle: $('modalTitle'),
+    modalMessage: $('modalMessage'),
+  };
+
+  renderParamForm();
+  loadParams();
+  fillParamForm();
+
+  renderEntryForm();
+  dom.panels = [...dom.entrySections.querySelectorAll('details')];
+  bindStepper();
+  resetEntryForm();
+
+  buildTableHead();
+  loadRecords();
+  renderSummary();
+
+  bindEvents();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
