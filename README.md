@@ -44,13 +44,16 @@
 ## 文件结构
 
 ```
-AA_412.html   # 单文件应用（HTML + CSS + JavaScript，约 1085 行）
+A_412.html    # 单文件应用（HTML + CSS + JavaScript，约 1085 行）
 README.md     # 项目说明文档
+LICENSE       # MIT 许可证
+.gitignore    # Git 忽略规则
+CHANGELOG.md  # 变更日志
 ```
 
 ## 使用方法
 
-1. 直接用浏览器打开 `AA_412.html`
+1. 直接用浏览器打开 `A_412.html`
 2. 在“参数调整”中设置或确认计算参数，点击“保存参数”
 3. 切换到“数据录入”，填写养殖户数据，点击“保存”
 4. 切换到“数据汇总”，查看汇总卡片和明细表格
